@@ -1,11 +1,14 @@
 package v2_test
 
 import (
+	"errors"
+
 	"code.cloudfoundry.org/cli/actor/sharedaction"
 	"code.cloudfoundry.org/cli/actor/v2action"
 	"code.cloudfoundry.org/cli/command"
 	"code.cloudfoundry.org/cli/command/commandfakes"
 	"code.cloudfoundry.org/cli/command/v2"
+	"code.cloudfoundry.org/cli/command/v2/shared"
 	"code.cloudfoundry.org/cli/command/v2/v2fakes"
 	"code.cloudfoundry.org/cli/util/configv3"
 	"code.cloudfoundry.org/cli/util/ui"
@@ -40,7 +43,6 @@ var _ = FDescribe("space Command", func() {
 
 		binaryName = "faceman"
 		fakeConfig.BinaryNameReturns(binaryName)
-		// 	cmd.RequiredArgs.Organization = "some-org"
 		fakeConfig.ExperimentalReturns(true)
 	})
 
@@ -102,146 +104,232 @@ var _ = FDescribe("space Command", func() {
 			})
 		})
 
+		Context("when getting the space returns an error", func() {
+			Context("when the error is translatable", func() {
+				BeforeEach(func() {
+					fakeActor.GetSpaceByOrganizationAndNameReturns(
+						v2action.Space{},
+						v2action.Warnings{"warning-1", "warning-2"},
+						v2action.SpaceNotFoundError{Name: "some-space"})
+				})
+
+				It("returns a translatable error and outputs all warnings", func() {
+					Expect(executeErr).To(MatchError(shared.SpaceNotFoundError{Name: "some-space"}))
+
+					Expect(testUI.Err).To(Say("warning-1"))
+					Expect(testUI.Err).To(Say("warning-2"))
+				})
+			})
+
+			Context("when the error is not translatable", func() {
+				var expectedErr error
+
+				BeforeEach(func() {
+					expectedErr = errors.New("get space error")
+					fakeActor.GetSpaceByOrganizationAndNameReturns(
+						v2action.Space{},
+						v2action.Warnings{"warning-1", "warning-2"},
+						expectedErr)
+				})
+
+				It("returns the error and all warnings", func() {
+					Expect(executeErr).To(MatchError(expectedErr))
+
+					Expect(testUI.Err).To(Say("warning-1"))
+					Expect(testUI.Err).To(Say("warning-2"))
+				})
+			})
+		})
 	})
-	// 	Context("when getting the org returns an error", func() {
-	// 		Context("when the error is translatable", func() {
-	// 			BeforeEach(func() {
-	// 				fakeActor.GetOrganizationByNameReturns(
-	// 					v2action.Organization{},
-	// 					v2action.Warnings{"warning-1", "warning-2"},
-	// 					v2action.OrganizationNotFoundError{Name: "some-org"})
-	// 			})
 
-	// 			It("returns a translatable error and outputs all warnings", func() {
-	// 				Expect(executeErr).To(MatchError(shared.OrganizationNotFoundError{Name: "some-org"}))
+	Context("when the --guid flag is not provided", func() {
+		Context("when no errors occur", func() {
+			BeforeEach(func() {
+				fakeConfig.CurrentUserReturns(
+					configv3.User{
+						Name: "some-user",
+					},
+					nil)
 
-	// 				Expect(testUI.Err).To(Say("warning-1"))
-	// 				Expect(testUI.Err).To(Say("warning-2"))
-	// 			})
-	// 		})
+				cmd.RequiredArgs.Space = "some-space"
 
-	// 		Context("when the error is not translatable", func() {
-	// 			var expectedErr error
+				fakeConfig.TargetedOrganizationReturns(
+					configv3.Organization{
+						GUID: "some-org-guid",
+						Name: "some-org",
+					},
+				)
 
-	// 			BeforeEach(func() {
-	// 				expectedErr = errors.New("get org error")
-	// 				fakeActor.GetOrganizationByNameReturns(
-	// 					v2action.Organization{},
-	// 					v2action.Warnings{"warning-1", "warning-2"},
-	// 					expectedErr)
-	// 			})
+				fakeActor.GetSpaceSummaryByOrganizationAndNameReturns(
+					v2action.SpaceSummary{
+						SpaceName:            "some-space",
+						OrgName:              "some-org",
+						AppNames:             []string{"app1", "app2", "app3"},
+						ServiceInstanceNames: []string{"service1", "service2", "service3"},
+						SpaceQuotaName:       "some-space-quota",
+						SecurityGroupNames:   []string{"public_networks", "dns", "load_balancer"},
+					},
+					v2action.Warnings{"warning-1", "warning-2"},
+					nil,
+				)
+			})
 
-	// 			It("returns the error and all warnings", func() {
-	// 				Expect(executeErr).To(MatchError(expectedErr))
+			It("displays warnings and a table with space name, org, apps, services, space quota and security groups", func() {
+				Expect(executeErr).To(BeNil())
 
-	// 				Expect(testUI.Err).To(Say("warning-1"))
-	// 				Expect(testUI.Err).To(Say("warning-2"))
-	// 			})
-	// 		})
-	// 	})
-	// })
+				Eventually(testUI.Out).Should(Say("Getting info for space some-space in org some-org as some-user\\.\\.\\."))
+				Expect(testUI.Err).To(Say("warning-1"))
+				Expect(testUI.Err).To(Say("warning-2"))
 
-	// Context("when the --guid flag is not provided", func() {
-	// 	Context("when no errors occur", func() {
-	// 		BeforeEach(func() {
-	// 			fakeConfig.CurrentUserReturns(
-	// 				configv3.User{
-	// 					Name: "some-user",
-	// 				},
-	// 				nil)
+				Eventually(testUI.Out).Should(Say("name:\\s+some-space"))
+				Eventually(testUI.Out).Should(Say("org:\\s+some-org"))
+				Eventually(testUI.Out).Should(Say("apps:\\s+app1, app2, app3"))
+				Eventually(testUI.Out).Should(Say("services:\\s+service1, service2, service3"))
+				Eventually(testUI.Out).Should(Say("space quota:\\s+some-space-quota"))
+				Eventually(testUI.Out).Should(Say("security groups:\\s+public_networks, dns, load_balancer"))
 
-	// 			fakeActor.GetOrganizationSummaryByNameReturns(
-	// 				v2action.OrganizationSummary{
-	// 					Name: "some-org",
-	// 					DomainNames: []string{
-	// 						"a-shared.com",
-	// 						"b-private.com",
-	// 						"c-shared.com",
-	// 						"d-private.com",
-	// 					},
-	// 					QuotaName: "some-quota",
-	// 					SpaceNames: []string{
-	// 						"space1",
-	// 						"space2",
-	// 					},
-	// 				},
-	// 				v2action.Warnings{"warning-1", "warning-2"},
-	// 				nil)
-	// 		})
+				Expect(fakeConfig.CurrentUserCallCount()).To(Equal(1))
+				Expect(fakeActor.GetSpaceSummaryByOrganizationAndNameCallCount()).To(Equal(1))
+				orgGUID, spaceName, includeSecurityGroupRules := fakeActor.GetSpaceSummaryByOrganizationAndNameArgsForCall(0)
+				Expect(orgGUID).To(Equal("some-org-guid"))
+				Expect(spaceName).To(Equal("some-space"))
+				Expect(includeSecurityGroupRules).To(BeFalse())
+			})
+		})
 
-	// 		It("displays warnings and a table with org domains, org quota and spaces", func() {
-	// 			Expect(executeErr).To(BeNil())
+		Context("when getting the current user returns an error", func() {
+			var expectedErr error
 
-	// 			Eventually(testUI.Out).Should(Say("Getting info for org %s as some-user\\.\\.\\.", cmd.RequiredArgs.Organization))
-	// 			Expect(testUI.Err).To(Say("warning-1"))
-	// 			Expect(testUI.Err).To(Say("warning-2"))
+			BeforeEach(func() {
+				expectedErr = errors.New("getting current user error")
+				fakeConfig.CurrentUserReturns(
+					configv3.User{},
+					expectedErr)
+			})
 
-	// 			Eventually(testUI.Out).Should(Say("name:\\s+%s", cmd.RequiredArgs.Organization))
+			It("returns the error", func() {
+				Expect(executeErr).To(MatchError(expectedErr))
+			})
+		})
 
-	// 			Eventually(testUI.Out).Should(Say("domains:\\s+a-shared.com, b-private.com, c-shared.com, d-private.com"))
+		Context("when getting the space summary returns an error", func() {
+			Context("when the error is translatable", func() {
+				BeforeEach(func() {
+					fakeActor.GetSpaceSummaryByOrganizationAndNameReturns(
+						v2action.SpaceSummary{},
+						v2action.Warnings{"warning-1", "warning-2"},
+						v2action.SpaceNotFoundError{Name: "some-space"})
+				})
 
-	// 			Eventually(testUI.Out).Should(Say("quota:\\s+some-quota"))
+				It("returns a translatable error and outputs all warnings", func() {
+					Expect(executeErr).To(MatchError(shared.SpaceNotFoundError{Name: "some-space"}))
 
-	// 			Eventually(testUI.Out).Should(Say("spaces:\\s+space1, space2"))
+					Expect(testUI.Err).To(Say("warning-1"))
+					Expect(testUI.Err).To(Say("warning-2"))
+				})
+			})
 
-	// 			Expect(fakeConfig.CurrentUserCallCount()).To(Equal(1))
+			Context("when the error is not translatable", func() {
+				var expectedErr error
 
-	// 			Expect(fakeActor.GetOrganizationSummaryByNameCallCount()).To(Equal(1))
-	// 			orgName := fakeActor.GetOrganizationSummaryByNameArgsForCall(0)
-	// 			Expect(orgName).To(Equal("some-org"))
-	// 		})
-	// 	})
+				BeforeEach(func() {
+					expectedErr = errors.New("get space summary error")
+					fakeActor.GetSpaceSummaryByOrganizationAndNameReturns(
+						v2action.SpaceSummary{},
+						v2action.Warnings{"warning-1", "warning-2"},
+						expectedErr)
+				})
 
-	// 	Context("when getting the current user returns an error", func() {
-	// 		var expectedErr error
+				It("returns the error and all warnings", func() {
+					Expect(executeErr).To(MatchError(expectedErr))
 
-	// 		BeforeEach(func() {
-	// 			expectedErr = errors.New("getting current user error")
-	// 			fakeConfig.CurrentUserReturns(
-	// 				configv3.User{},
-	// 				expectedErr)
-	// 		})
+					Expect(testUI.Err).To(Say("warning-1"))
+					Expect(testUI.Err).To(Say("warning-2"))
+				})
+			})
+		})
+	})
 
-	// 		It("returns the error", func() {
-	// 			Expect(executeErr).To(MatchError(expectedErr))
-	// 		})
-	// 	})
+	Context("when the --security-group-rules flag is provided", func() {
+		BeforeEach(func() {
+			fakeConfig.CurrentUserReturns(
+				configv3.User{
+					Name: "some-user",
+				},
+				nil)
 
-	// 	Context("when getting the org summary returns an error", func() {
-	// 		Context("when the error is translatable", func() {
-	// 			BeforeEach(func() {
-	// 				fakeActor.GetOrganizationSummaryByNameReturns(
-	// 					v2action.OrganizationSummary{},
-	// 					v2action.Warnings{"warning-1", "warning-2"},
-	// 					v2action.OrganizationNotFoundError{Name: "some-org"})
-	// 			})
+			cmd.RequiredArgs.Space = "some-space"
+			cmd.SecurityGroupRules = true
 
-	// 			It("returns a translatable error and outputs all warnings", func() {
-	// 				Expect(executeErr).To(MatchError(shared.OrganizationNotFoundError{Name: "some-org"}))
+			fakeConfig.TargetedOrganizationReturns(
+				configv3.Organization{
+					GUID: "some-org-guid",
+					Name: "some-org",
+				},
+			)
 
-	// 				Expect(testUI.Err).To(Say("warning-1"))
-	// 				Expect(testUI.Err).To(Say("warning-2"))
-	// 			})
-	// 		})
+			fakeActor.GetSpaceSummaryByOrganizationAndNameReturns(
+				v2action.SpaceSummary{
+					SpaceName:            "some-space",
+					OrgName:              "some-org",
+					AppNames:             []string{"app1", "app2", "app3"},
+					ServiceInstanceNames: []string{"service1", "service2", "service3"},
+					SpaceQuotaName:       "some-space-quota",
+					SecurityGroupNames:   []string{"public_networks", "dns", "load_balancer"},
+					SecurityGroupRules: []v2action.SecurityGroupRule{
+						{
+							Description: "Public networks",
+							Destination: "0.0.0.0-9.255.255.255",
+							Lifecycle:   "staging",
+							Name:        "public_networks",
+							Port:        12345,
+							Protocol:    "tcp",
+						},
+						{
+							Description: "Public networks",
+							Destination: "0.0.0.0-9.255.255.255",
+							Lifecycle:   "running",
+							Name:        "public_networks",
+							Port:        12345,
+							Protocol:    "tcp",
+						},
+						{
+							Description: "More public networks",
+							Destination: "11.0.0.0-169.253.255.255",
+							Lifecycle:   "staging",
+							Name:        "more_public_networks",
+							Port:        54321,
+							Protocol:    "udp",
+						},
+						{
+							Description: "More public networks",
+							Destination: "11.0.0.0-169.253.255.255",
+							Lifecycle:   "running",
+							Name:        "more_public_networks",
+							Port:        54321,
+							Protocol:    "udp",
+						},
+					},
+				},
+				v2action.Warnings{"warning-1", "warning-2"},
+				nil,
+			)
+		})
 
-	// 		Context("when the error is not translatable", func() {
-	// 			var expectedErr error
+		It("displays warnings and security group rules", func() {
+			Expect(executeErr).To(BeNil())
 
-	// 			BeforeEach(func() {
-	// 				expectedErr = errors.New("get org error")
-	// 				fakeActor.GetOrganizationSummaryByNameReturns(
-	// 					v2action.OrganizationSummary{},
-	// 					v2action.Warnings{"warning-1", "warning-2"},
-	// 					expectedErr)
-	// 			})
+			orgGUID, spaceName, includeSecurityGroupRules := fakeActor.GetSpaceSummaryByOrganizationAndNameArgsForCall(0)
+			Expect(orgGUID).To(Equal("some-org-guid"))
+			Expect(spaceName).To(Equal("some-space"))
+			Expect(includeSecurityGroupRules).To(BeTrue())
 
-	// 			It("returns the error and all warnings", func() {
-	// 				Expect(executeErr).To(MatchError(expectedErr))
-
-	// 				Expect(testUI.Err).To(Say("warning-1"))
-	// 				Expect(testUI.Err).To(Say("warning-2"))
-	// 			})
-	// 		})
-	// 	})
-	// })
+			Eventually(testUI.Out).Should(Say("name:\\s+some-space"))
+			Eventually(testUI.Out).Should(Say("(?m)^\\s+security group\\s+destination\\s+ports\\s+protocol\\s+lifecycle\\s+description$"))
+			Eventually(testUI.Out).Should(Say("#0\\s+public_networks\\s+0.0.0.0-9.255.255.255\\s+12345\\s+tcp\\s+staging\\s+Public networks"))
+			Eventually(testUI.Out).Should(Say("(?m)^\\s+public_networks\\s+0.0.0.0-9.255.255.255\\s+12345\\s+tcp\\s+running\\s+Public networks"))
+			Eventually(testUI.Out).Should(Say("#1\\s+more_public_networks\\s+11.0.0.0-169.253.255.255\\s+54321\\s+udp\\s+staging\\s+More public networks"))
+			Eventually(testUI.Out).Should(Say("(?m)\\s+more_public_networks\\s+11.0.0.0-169.253.255.255\\s+54321\\s+udp\\s+running\\s+More public networks"))
+		})
+	})
 })

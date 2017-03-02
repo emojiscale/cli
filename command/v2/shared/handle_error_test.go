@@ -90,4 +90,9 @@ var _ = Describe("HandleError", func() {
 			err,
 			err),
 	)
+
+	It("returns nil for a nil error", func() {
+		nilErr := HandleError(nil)
+		Expect(nilErr).To(BeNil())
+	})
 })

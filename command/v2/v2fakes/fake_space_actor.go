@@ -25,6 +25,23 @@ type FakeSpaceActor struct {
 		result2 v2action.Warnings
 		result3 error
 	}
+	GetSpaceSummaryByOrganizationAndNameStub        func(orgGUID string, spaceName string, includeSecurityRules bool) (v2action.SpaceSummary, v2action.Warnings, error)
+	getSpaceSummaryByOrganizationAndNameMutex       sync.RWMutex
+	getSpaceSummaryByOrganizationAndNameArgsForCall []struct {
+		orgGUID              string
+		spaceName            string
+		includeSecurityRules bool
+	}
+	getSpaceSummaryByOrganizationAndNameReturns struct {
+		result1 v2action.SpaceSummary
+		result2 v2action.Warnings
+		result3 error
+	}
+	getSpaceSummaryByOrganizationAndNameReturnsOnCall map[int]struct {
+		result1 v2action.SpaceSummary
+		result2 v2action.Warnings
+		result3 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -84,11 +101,69 @@ func (fake *FakeSpaceActor) GetSpaceByOrganizationAndNameReturnsOnCall(i int, re
 	}{result1, result2, result3}
 }
 
+func (fake *FakeSpaceActor) GetSpaceSummaryByOrganizationAndName(orgGUID string, spaceName string, includeSecurityRules bool) (v2action.SpaceSummary, v2action.Warnings, error) {
+	fake.getSpaceSummaryByOrganizationAndNameMutex.Lock()
+	ret, specificReturn := fake.getSpaceSummaryByOrganizationAndNameReturnsOnCall[len(fake.getSpaceSummaryByOrganizationAndNameArgsForCall)]
+	fake.getSpaceSummaryByOrganizationAndNameArgsForCall = append(fake.getSpaceSummaryByOrganizationAndNameArgsForCall, struct {
+		orgGUID              string
+		spaceName            string
+		includeSecurityRules bool
+	}{orgGUID, spaceName, includeSecurityRules})
+	fake.recordInvocation("GetSpaceSummaryByOrganizationAndName", []interface{}{orgGUID, spaceName, includeSecurityRules})
+	fake.getSpaceSummaryByOrganizationAndNameMutex.Unlock()
+	if fake.GetSpaceSummaryByOrganizationAndNameStub != nil {
+		return fake.GetSpaceSummaryByOrganizationAndNameStub(orgGUID, spaceName, includeSecurityRules)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
+	}
+	return fake.getSpaceSummaryByOrganizationAndNameReturns.result1, fake.getSpaceSummaryByOrganizationAndNameReturns.result2, fake.getSpaceSummaryByOrganizationAndNameReturns.result3
+}
+
+func (fake *FakeSpaceActor) GetSpaceSummaryByOrganizationAndNameCallCount() int {
+	fake.getSpaceSummaryByOrganizationAndNameMutex.RLock()
+	defer fake.getSpaceSummaryByOrganizationAndNameMutex.RUnlock()
+	return len(fake.getSpaceSummaryByOrganizationAndNameArgsForCall)
+}
+
+func (fake *FakeSpaceActor) GetSpaceSummaryByOrganizationAndNameArgsForCall(i int) (string, string, bool) {
+	fake.getSpaceSummaryByOrganizationAndNameMutex.RLock()
+	defer fake.getSpaceSummaryByOrganizationAndNameMutex.RUnlock()
+	return fake.getSpaceSummaryByOrganizationAndNameArgsForCall[i].orgGUID, fake.getSpaceSummaryByOrganizationAndNameArgsForCall[i].spaceName, fake.getSpaceSummaryByOrganizationAndNameArgsForCall[i].includeSecurityRules
+}
+
+func (fake *FakeSpaceActor) GetSpaceSummaryByOrganizationAndNameReturns(result1 v2action.SpaceSummary, result2 v2action.Warnings, result3 error) {
+	fake.GetSpaceSummaryByOrganizationAndNameStub = nil
+	fake.getSpaceSummaryByOrganizationAndNameReturns = struct {
+		result1 v2action.SpaceSummary
+		result2 v2action.Warnings
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeSpaceActor) GetSpaceSummaryByOrganizationAndNameReturnsOnCall(i int, result1 v2action.SpaceSummary, result2 v2action.Warnings, result3 error) {
+	fake.GetSpaceSummaryByOrganizationAndNameStub = nil
+	if fake.getSpaceSummaryByOrganizationAndNameReturnsOnCall == nil {
+		fake.getSpaceSummaryByOrganizationAndNameReturnsOnCall = make(map[int]struct {
+			result1 v2action.SpaceSummary
+			result2 v2action.Warnings
+			result3 error
+		})
+	}
+	fake.getSpaceSummaryByOrganizationAndNameReturnsOnCall[i] = struct {
+		result1 v2action.SpaceSummary
+		result2 v2action.Warnings
+		result3 error
+	}{result1, result2, result3}
+}
+
 func (fake *FakeSpaceActor) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.getSpaceByOrganizationAndNameMutex.RLock()
 	defer fake.getSpaceByOrganizationAndNameMutex.RUnlock()
+	fake.getSpaceSummaryByOrganizationAndNameMutex.RLock()
+	defer fake.getSpaceSummaryByOrganizationAndNameMutex.RUnlock()
 	return fake.invocations
 }
 
