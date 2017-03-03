@@ -5,7 +5,7 @@ import (
 	"code.cloudfoundry.org/cli/actor/v2action/v2actionfakes"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2"
 	. "github.com/onsi/ginkgo"
-	// . "github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Space Summary Actions", func() {
@@ -91,26 +91,27 @@ var _ = Describe("Space Summary Actions", func() {
 			// 		nil)
 			// })
 
-			// It("returns the organization summary and all warnings", func() {
-			// 	Expect(fakeCloudControllerClient.GetOrganizationsCallCount()).To(Equal(1))
-			// 	Expect(fakeCloudControllerClient.GetOrganizationsArgsForCall(0)[0].Value).To(Equal("some-org"))
-			// 	Expect(fakeCloudControllerClient.GetSharedDomainsCallCount()).To(Equal(1))
-			// 	Expect(fakeCloudControllerClient.GetOrganizationPrivateDomainsCallCount()).To(Equal(1))
-			// 	Expect(fakeCloudControllerClient.GetOrganizationPrivateDomainsArgsForCall(0)).To(Equal("some-org-guid"))
-			// 	Expect(fakeCloudControllerClient.GetOrganizationQuotaCallCount()).To(Equal(1))
-			// 	Expect(fakeCloudControllerClient.GetOrganizationQuotaArgsForCall(0)).To(Equal("some-quota-definition-guid"))
-			// 	Expect(fakeCloudControllerClient.GetSpacesCallCount()).To(Equal(1))
-			// 	Expect(fakeCloudControllerClient.GetSpacesArgsForCall(0)[0].Value).To(Equal("some-org-guid"))
+			It("returns the organization summary and all warnings", func() {
+				Expect(fakeCloudControllerClient.GetOrganizationCallCount()).To(Equal(1))
+				Expect(fakeCloudControllerClient.GetOrganizationArgsForCall(0)).To(Equal("some-org-guid"))
+				// Expect(fakeCloudControllerClient.GetSharedDomainsCallCount()).To(Equal(1))
+				// Expect(fakeCloudControllerClient.GetOrganizationPrivateDomainsCallCount()).To(Equal(1))
+				// Expect(fakeCloudControllerClient.GetOrganizationPrivateDomainsArgsForCall(0)).To(Equal("some-org-guid"))
+				// Expect(fakeCloudControllerClient.GetOrganizationQuotaCallCount()).To(Equal(1))
+				// Expect(fakeCloudControllerClient.GetOrganizationQuotaArgsForCall(0)).To(Equal("some-quota-definition-guid"))
+				// Expect(fakeCloudControllerClient.GetSpacesCallCount()).To(Equal(1))
+				// Expect(fakeCloudControllerClient.GetSpacesArgsForCall(0)[0].Value).To(Equal("some-org-guid"))
 
-			// 	Expect(orgSummary).To(Equal(OrganizationSummary{
-			// 		Name:        "some-org",
-			// 		QuotaName:   "some-org-quota",
-			// 		DomainNames: []string{"private-domain-1", "private-domain-2", "shared-domain-1", "shared-domain-2"},
-			// 		SpaceNames:  []string{"space-1", "space-2"},
-			// 	}))
-			// 	Expect(warnings).To(ConsistOf([]string{"warning-1", "warning-2", "warning-3", "warning-4", "warning-5", "warning-6", "warning-7", "warning-8", "warning-9", "warning-10"}))
-			// 	Expect(err).NotTo(HaveOccurred())
-			// })
+				Expect(spaceSummary).To(Equal(SpaceSummary{
+					SpaceName: "some-space-name",
+					OrgName:   "some-org",
+					// QuotaName:   "some-org-quota",
+					// DomainNames: []string{"private-domain-1", "private-domain-2", "shared-domain-1", "shared-domain-2"},
+					// SpaceNames:  []string{"space-1", "space-2"},
+				}))
+				Expect(warnings).To(ConsistOf([]string{"warning-1", "warning-2"}))
+				Expect(err).NotTo(HaveOccurred())
+			})
 			// })
 
 			// Context("when an error is encountered getting the organization", func() {

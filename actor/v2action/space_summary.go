@@ -20,5 +20,18 @@ type SecurityGroupRule struct {
 }
 
 func (actor Actor) GetSpaceSummaryByOrganizationAndName(orgGUID string, name string) (SpaceSummary, Warnings, error) {
-	return SpaceSummary{}, nil, nil
+	var allWarnings Warnings
+
+	org, warnings, err := actor.GetOrganization(orgGUID)
+	allWarnings = append(allWarnings, warnings...)
+	if err != nil {
+		return SpaceSummary{}, nil, nil
+	}
+
+	spaceSummary := SpaceSummary{
+		SpaceName: name,
+		OrgName:   org.Name,
+	}
+
+	return spaceSummary, allWarnings, nil
 }
