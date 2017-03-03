@@ -15,6 +15,7 @@ type CloudControllerClient interface {
 	GetApplication(guid string) (ccv2.Application, ccv2.Warnings, error)
 	GetApplications(queries []ccv2.Query) ([]ccv2.Application, ccv2.Warnings, error)
 	GetJob(jobGUID string) (ccv2.Job, ccv2.Warnings, error)
+	GetOrganization(guid string) (ccv2.Organization, ccv2.Warnings, error)
 	GetOrganizations(queries []ccv2.Query) ([]ccv2.Organization, ccv2.Warnings, error)
 	GetOrganizationPrivateDomains(orgGUID string, queries []ccv2.Query) ([]ccv2.Domain, ccv2.Warnings, error)
 	GetOrganizationQuota(guid string) (ccv2.OrganizationQuota, ccv2.Warnings, error)

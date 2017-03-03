@@ -19,6 +19,6 @@ type SecurityGroupRule struct {
 	Protocol    string
 }
 
-// func (actor Actor) GetSpaceSummaryByOrganizationAndName(orgGUID string, name string) (SpaceSummary, Warnings, error) {
-
-// }
+func (actor Actor) GetSpaceSummaryByOrganizationAndName(orgGUID string, name string) (SpaceSummary, Warnings, error) {
+	return SpaceSummary{}, nil, nil
+}
